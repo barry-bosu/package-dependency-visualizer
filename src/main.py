@@ -1,14 +1,14 @@
 import sys
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 
 
 def load_configuration(config_path):
     try:
-        tree = ET.parse(config_path)
+        tree = element_tree.parse(config_path)
         root = tree.getroot()
     except FileNotFoundError:
         raise ValueError(f"Configuration file not found: {config_path}")
-    except ET.ParseError:
+    except element_tree.ParseError:
         raise ValueError("Configuration file contains invalid XML")
 
     return {
@@ -18,6 +18,7 @@ def load_configuration(config_path):
         "package_version": root.findtext("package_version"),
         "output_file": root.findtext("output_file"),
     }
+
 
 def validate_configuration(config):
     if not config["package_name"]:
@@ -34,6 +35,7 @@ def validate_configuration(config):
 
     if not config["output_file"]:
         raise ValueError("output_file cannot be empty")
+
 
 def print_configuration(config):
     for key, value in config.items():
