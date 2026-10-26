@@ -1,6 +1,8 @@
+import json
 import sys
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as element_tree
-
 
 def load_configuration(config_path):
     try:
@@ -41,6 +43,49 @@ def print_configuration(config):
     for key, value in config.items():
         print(f"{key}={value}")
 
+#esto es lok he anadido en la segunda etapa, busca por combinacion
+def get_test_dependencies(repository_path, package_name, package_version):
+    try:
+        tree = element_tree.parse(repository_path)
+        root = tree.getroot()
+    except FileNotFoundError:
+        raise ValueError(f"Repository file not found: {repository_path}")
+    except element_tree.ParseError:
+        raise ValueError("Repository file contains invalid XML")
+
+    for package in root.findall("package"):
+        if (
+            package.get("name") == package_name
+            and package.get("version") == package_version
+        ):
+            return [
+                dependency.text
+                for dependency in package.findall("./dependencies/dependency")
+            ]
+
+    raise ValueError(
+        f"Package {package_name} version {package_version} not found"
+    )
+
+def get_repository_dependencies(repository_url, package_name, package_version):
+    repository_url = repository_url.rstrip("/")
+    package_url = (
+        f"{repository_url}/{package_name}/{package_version}/json"
+    )
+
+    try:
+        with urllib.request.urlopen(package_url) as response:
+            package_data = json.load(response)
+    except urllib.error.HTTPError as error:
+        raise ValueError(
+            f"Package {package_name} version {package_version} not found"
+        ) from error
+    except urllib.error.URLError as error:
+        raise ValueError(
+            f"Cannot connect to repository: {repository_url}"
+        ) from error
+
+    return package_data["info"].get("requires_dist") or []
 
 def main():
     config_path = "config/config.xml"
@@ -48,11 +93,26 @@ def main():
     try:
         config = load_configuration(config_path)
         validate_configuration(config)
-        print_configuration(config)
+
+        if config["test_mode"] == "true":
+            dependencies = get_test_dependencies(
+                config["repository"],
+                config["package_name"],
+                config["package_version"],
+            )
+        else:
+            dependencies = get_repository_dependencies(
+                config["repository"],
+                config["package_name"],
+                config["package_version"],
+            )
+
+        for dependency in dependencies:
+            print(dependency)
+
     except ValueError as error:
         print(f"Error: {error}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

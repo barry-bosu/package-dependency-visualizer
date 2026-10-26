@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<repository>
+    <package name="demo-package" version="1.0.0">
+        <dependencies>
+            <dependency>requests</dependency>
+            <dependency>urllib3</dependency>
+            <dependency>certifi</dependency>
+        </dependencies>
+    </package>
+</repository>
