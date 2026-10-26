@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<repository>
+    <package name="A" version="1.0.0">
+        <dependencies>
+            <dependency>B</dependency>
+            <dependency>C</dependency>
+        </dependencies>
+    </package>
+
+    <package name="B" version="1.0.0">
+        <dependencies>
+            <dependency>D</dependency>
+        </dependencies>
+    </package>
+
+    <package name="C" version="1.0.0">
+        <dependencies>
+            <dependency>D</dependency>
+        </dependencies>
+    </package>
+
+    <package name="D" version="1.0.0">
+        <dependencies>
+            <dependency>A</dependency>
+        </dependencies>
+    </package>
+    
+    <!--esto es para la etapa 3-->
+    <package name="E" version="1.0.0">
+        <dependencies>
+            <dependency>F</dependency>
+        </dependencies>
+    </package>
+
+    <package name="F" version="1.0.0">
+        <dependencies>
+        </dependencies>
+    </package>
+
+    <package name="G" version="1.0.0">
+        <dependencies>
+        </dependencies>
+    </package>
+</repository>
+

@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<!--<configuration>
     <package_name>requests</package_name>
     <repository>https://pypi.org/pypi</repository>
     <test_mode>false</test_mode>
     <package_version>2.32.5</package_version>
     <output_file>dependency_graph.png</output_file>
+</configuration>-->
+
+<!--esto es de la fase 3-->
+<configuration>
+<package_name>A</package_name>
+<repository>./test_graph_repository.xml</repository>
+<test_mode>true</test_mode>
+<package_version>1.0.0</package_version>
+<output_file>dependency_graph.png</output_file>
 </configuration>

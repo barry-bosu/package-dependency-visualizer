@@ -87,6 +87,47 @@ def get_repository_dependencies(repository_url, package_name, package_version):
 
     return package_data["info"].get("requires_dist") or []
 
+#esto es de la tercera fase
+def build_dependency_graph(
+    package_name,
+    package_version,
+    get_dependencies,
+):
+    graph = {}
+    visited = set()
+    stack = [(package_name, package_version)]
+
+    while stack:
+        current_package, current_version = stack.pop()
+
+        if current_package in visited:
+            continue
+
+        visited.add(current_package)
+
+        dependencies = get_dependencies(
+            current_package,
+            current_version,
+        )
+
+        graph[current_package] = dependencies
+
+        for dependency in reversed(dependencies):
+            if dependency not in visited:
+                stack.append((dependency, current_version))
+
+    return graph
+
+def create_test_dependency_getter(repository_path):
+    def get_dependencies(package_name, package_version):
+        return get_test_dependencies(
+            repository_path,
+            package_name,
+            package_version,
+        )
+
+    return get_dependencies
+
 def main():
     config_path = "config/config.xml"
 
@@ -95,11 +136,18 @@ def main():
         validate_configuration(config)
 
         if config["test_mode"] == "true":
-            dependencies = get_test_dependencies(
-                config["repository"],
+            dependency_getter = create_test_dependency_getter(
+                config["repository"]
+            )
+
+            graph = build_dependency_graph(
                 config["package_name"],
                 config["package_version"],
+                dependency_getter,
             )
+
+            for package, dependencies in graph.items():
+                print(f"{package}: {', '.join(dependencies)}")
         else:
             dependencies = get_repository_dependencies(
                 config["repository"],
@@ -107,8 +155,8 @@ def main():
                 config["package_version"],
             )
 
-        for dependency in dependencies:
-            print(dependency)
+            for dependency in dependencies:
+                print(dependency)
 
     except ValueError as error:
         print(f"Error: {error}")
