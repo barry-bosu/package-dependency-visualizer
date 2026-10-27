@@ -87,7 +87,6 @@ def get_repository_dependencies(repository_url, package_name, package_version):
 
     return package_data["info"].get("requires_dist") or []
 
-#esto es de la tercera fase
 def build_dependency_graph(
     package_name,
     package_version,
