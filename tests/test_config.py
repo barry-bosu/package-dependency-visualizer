@@ -14,7 +14,8 @@ class TestConfiguration(unittest.TestCase):
 
     def create_valid_config(self):
         return {
-        "package_name": "demo-package",            "repository": "./test_repository.xml",
+        "package_name": "demo-package",
+        "repository": "./test_repository.xml",
         "test_mode": "true",
         "package_version": "1.0.0",
         "output_file": "dependency_graph.png",
