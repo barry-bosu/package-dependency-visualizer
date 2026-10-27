@@ -43,8 +43,8 @@ def print_configuration(config):
     for key, value in config.items():
         print(f"{key}={value}")
 
-#esto es lok he anadido en la segunda etapa, busca por combinacion
 def get_test_dependencies(repository_path, package_name, package_version):
+    """Return direct dependencies from the test repository."""
     try:
         tree = element_tree.parse(repository_path)
         root = tree.getroot()
