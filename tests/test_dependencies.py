@@ -12,6 +12,7 @@ from main import (
     create_test_dependency_getter,
     get_reverse_dependencies,
     get_test_dependencies,
+    generate_graphviz,
 )
 
 
@@ -183,6 +184,28 @@ class TestDependencies(unittest.TestCase):
 
         self.assertEqual(reverse_dependencies, [])
 
+    def test_graphviz_dependency_graph(self):
+        """Test Graphviz representation with dependencies."""
+        graph = {
+            "A": ["B", "C"],
+            "B": ["D"],
+        }
+
+        result = generate_graphviz(graph)
+
+        self.assertIn('"A" -> "B";', result)
+        self.assertIn('"A" -> "C";', result)
+        self.assertIn('"B" -> "D";', result)
+
+    def test_graphviz_package_without_dependencies(self):
+        """Test Graphviz representation without dependencies."""
+        graph = {
+            "G": [],
+        }
+
+        result = generate_graphviz(graph)
+
+        self.assertIn('"G";', result)
 
 if __name__ == "__main__":
     unittest.main()

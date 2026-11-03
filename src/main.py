@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -10,9 +11,13 @@ def load_configuration(config_path):
         tree = element_tree.parse(config_path)
         root = tree.getroot()
     except FileNotFoundError:
-        raise ValueError(f"Configuration file not found: {config_path}")
+        raise ValueError(
+            f"Configuration file not found: {config_path}"
+        )
     except element_tree.ParseError:
-        raise ValueError("Configuration file contains invalid XML")
+        raise ValueError(
+            "Configuration file contains invalid XML"
+        )
 
     return {
         "package_name": root.findtext("package_name"),
@@ -59,7 +64,9 @@ def get_test_dependencies(
             f"Repository file not found: {repository_path}"
         )
     except element_tree.ParseError:
-        raise ValueError("Repository file contains invalid XML")
+        raise ValueError(
+            "Repository file contains invalid XML"
+        )
 
     for package in root.findall("package"):
         if (
@@ -74,7 +81,8 @@ def get_test_dependencies(
             ]
 
     raise ValueError(
-        f"Package {package_name} version {package_version} not found"
+        f"Package {package_name} version "
+        f"{package_version} not found"
     )
 
 
@@ -83,9 +91,11 @@ def get_repository_dependencies(
     package_name,
     package_version,
 ):
+    """Return dependencies from a Python package repository."""
     repository_url = repository_url.rstrip("/")
     package_url = (
-        f"{repository_url}/{package_name}/{package_version}/json"
+        f"{repository_url}/{package_name}/"
+        f"{package_version}/json"
     )
 
     try:
@@ -131,7 +141,9 @@ def build_dependency_graph(
 
         for dependency in reversed(dependencies):
             if dependency not in visited:
-                stack.append((dependency, current_version))
+                stack.append(
+                    (dependency, current_version)
+                )
 
     return graph
 
@@ -147,7 +159,42 @@ def get_reverse_dependencies(graph, package_name):
     return reverse_dependencies
 
 
+def generate_graphviz(graph):
+    """Generate a Graphviz DOT representation."""
+    lines = ["digraph dependencies {"]
+
+    for package, dependencies in graph.items():
+        if not dependencies:
+            lines.append(f'    "{package}";')
+
+        for dependency in dependencies:
+            lines.append(
+                f'    "{package}" -> "{dependency}";'
+            )
+
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def save_graph_image(graphviz_text, output_file):
+    """Save a Graphviz graph as a PNG image."""
+    process = subprocess.run(
+        ["dot", "-Tpng", "-o", output_file],
+        input=graphviz_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    if process.returncode != 0:
+        raise ValueError(
+            f"Graphviz error: {process.stderr.strip()}"
+        )
+
+
 def create_test_dependency_getter(repository_path):
+    """Create a dependency getter for the test repository."""
+
     def get_dependencies(package_name, package_version):
         return get_test_dependencies(
             repository_path,
@@ -158,6 +205,55 @@ def create_test_dependency_getter(repository_path):
     return get_dependencies
 
 
+def visualize_test_package(
+    repository_path,
+    package_name,
+    package_version,
+    output_file,
+):
+    """Build and visualize one test package graph."""
+    dependency_getter = create_test_dependency_getter(
+        repository_path
+    )
+
+    graph = build_dependency_graph(
+        package_name,
+        package_version,
+        dependency_getter,
+    )
+
+    graphviz_text = generate_graphviz(graph)
+
+    print(
+        f"\nGraphviz for package {package_name}:"
+    )
+    print(graphviz_text)
+
+    save_graph_image(
+        graphviz_text,
+        output_file,
+    )
+
+    print(f"Graph saved to {output_file}")
+
+
+def demonstrate_visualizations(repository_path):
+    """Create visualizations for three test packages."""
+    examples = [
+        ("A", "graph_A.png"),
+        ("E", "graph_E.png"),
+        ("G", "graph_G.png"),
+    ]
+
+    for package_name, output_file in examples:
+        visualize_test_package(
+            repository_path,
+            package_name,
+            "1.0.0",
+            output_file,
+        )
+
+
 def main():
     config_path = "config/config.xml"
 
@@ -166,23 +262,16 @@ def main():
         validate_configuration(config)
 
         if config["test_mode"] == "true":
-            dependency_getter = create_test_dependency_getter(
-                config["repository"]
-            )
-
-            graph = build_dependency_graph(
+            visualize_test_package(
+                config["repository"],
                 config["package_name"],
                 config["package_version"],
-                dependency_getter,
+                config["output_file"],
             )
 
-            reverse_dependencies = get_reverse_dependencies(
-                graph,
-                config["package_name"],
+            demonstrate_visualizations(
+                config["repository"]
             )
-
-            for package in reverse_dependencies:
-                print(package)
 
         else:
             dependencies = get_repository_dependencies(
