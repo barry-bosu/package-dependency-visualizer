@@ -4,6 +4,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as element_tree
 
+
 def load_configuration(config_path):
     try:
         tree = element_tree.parse(config_path)
@@ -43,13 +44,20 @@ def print_configuration(config):
     for key, value in config.items():
         print(f"{key}={value}")
 
-def get_test_dependencies(repository_path, package_name, package_version):
+
+def get_test_dependencies(
+    repository_path,
+    package_name,
+    package_version,
+):
     """Return direct dependencies from the test repository."""
     try:
         tree = element_tree.parse(repository_path)
         root = tree.getroot()
     except FileNotFoundError:
-        raise ValueError(f"Repository file not found: {repository_path}")
+        raise ValueError(
+            f"Repository file not found: {repository_path}"
+        )
     except element_tree.ParseError:
         raise ValueError("Repository file contains invalid XML")
 
@@ -60,14 +68,21 @@ def get_test_dependencies(repository_path, package_name, package_version):
         ):
             return [
                 dependency.text
-                for dependency in package.findall("./dependencies/dependency")
+                for dependency in package.findall(
+                    "./dependencies/dependency"
+                )
             ]
 
     raise ValueError(
         f"Package {package_name} version {package_version} not found"
     )
 
-def get_repository_dependencies(repository_url, package_name, package_version):
+
+def get_repository_dependencies(
+    repository_url,
+    package_name,
+    package_version,
+):
     repository_url = repository_url.rstrip("/")
     package_url = (
         f"{repository_url}/{package_name}/{package_version}/json"
@@ -78,7 +93,8 @@ def get_repository_dependencies(repository_url, package_name, package_version):
             package_data = json.load(response)
     except urllib.error.HTTPError as error:
         raise ValueError(
-            f"Package {package_name} version {package_version} not found"
+            f"Package {package_name} version "
+            f"{package_version} not found"
         ) from error
     except urllib.error.URLError as error:
         raise ValueError(
@@ -87,11 +103,13 @@ def get_repository_dependencies(repository_url, package_name, package_version):
 
     return package_data["info"].get("requires_dist") or []
 
+
 def build_dependency_graph(
     package_name,
     package_version,
     get_dependencies,
 ):
+    """Build the dependency graph using iterative DFS."""
     graph = {}
     visited = set()
     stack = [(package_name, package_version)]
@@ -117,6 +135,18 @@ def build_dependency_graph(
 
     return graph
 
+
+def get_reverse_dependencies(graph, package_name):
+    """Return packages that depend on the specified package."""
+    reverse_dependencies = []
+
+    for package, dependencies in graph.items():
+        if package_name in dependencies:
+            reverse_dependencies.append(package)
+
+    return reverse_dependencies
+
+
 def create_test_dependency_getter(repository_path):
     def get_dependencies(package_name, package_version):
         return get_test_dependencies(
@@ -126,6 +156,7 @@ def create_test_dependency_getter(repository_path):
         )
 
     return get_dependencies
+
 
 def main():
     config_path = "config/config.xml"
@@ -145,8 +176,14 @@ def main():
                 dependency_getter,
             )
 
-            for package, dependencies in graph.items():
-                print(f"{package}: {', '.join(dependencies)}")
+            reverse_dependencies = get_reverse_dependencies(
+                graph,
+                config["package_name"],
+            )
+
+            for package in reverse_dependencies:
+                print(package)
+
         else:
             dependencies = get_repository_dependencies(
                 config["repository"],
@@ -160,6 +197,7 @@ def main():
     except ValueError as error:
         print(f"Error: {error}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -10,8 +10,10 @@ sys.path.insert(
 from main import (
     build_dependency_graph,
     create_test_dependency_getter,
+    get_reverse_dependencies,
     get_test_dependencies,
 )
+
 
 class TestDependencies(unittest.TestCase):
 
@@ -52,6 +54,7 @@ class TestDependencies(unittest.TestCase):
             )
 
     def test_transitive_dependency_graph(self):
+        """Test graph construction with transitive dependencies."""
         getter = create_test_dependency_getter(
             "./test_graph_repository.xml"
         )
@@ -119,6 +122,67 @@ class TestDependencies(unittest.TestCase):
                 "G": [],
             },
         )
+
+    def test_reverse_dependencies_multiple(self):
+        """Test multiple reverse dependencies."""
+        getter = create_test_dependency_getter(
+            "./test_graph_repository.xml"
+        )
+
+        graph = build_dependency_graph(
+            "A",
+            "1.0.0",
+            getter,
+        )
+
+        reverse_dependencies = get_reverse_dependencies(
+            graph,
+            "D",
+        )
+
+        self.assertEqual(
+            set(reverse_dependencies),
+            {"B", "C"},
+        )
+
+    def test_reverse_dependencies_single(self):
+        """Test one reverse dependency."""
+        getter = create_test_dependency_getter(
+            "./test_graph_repository.xml"
+        )
+
+        graph = build_dependency_graph(
+            "A",
+            "1.0.0",
+            getter,
+        )
+
+        reverse_dependencies = get_reverse_dependencies(
+            graph,
+            "A",
+        )
+
+        self.assertEqual(reverse_dependencies, ["D"])
+
+    def test_reverse_dependencies_empty(self):
+        """Test no reverse dependencies."""
+        getter = create_test_dependency_getter(
+            "./test_graph_repository.xml"
+        )
+
+        graph = build_dependency_graph(
+            "G",
+            "1.0.0",
+            getter,
+        )
+
+        reverse_dependencies = get_reverse_dependencies(
+            graph,
+            "G",
+        )
+
+        self.assertEqual(reverse_dependencies, [])
+
 
 if __name__ == "__main__":
     unittest.main()
